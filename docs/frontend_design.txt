@@ -1,0 +1,339 @@
+Diseño del front-end de un sitio web de oportunidades
+inmobiliarias en Barcelona
+Febrero 2026
+Resumen
+Esta nota describe una propuesta de interfaz (front-end) para un sitio web que permi-
+te explorar propiedades inmobiliarias en Barcelona a partir de una base de 7.220avisos
+(data_ROI.xlsx ). El diseño se organiza alrededor de un mapa con marcadores georrefe-
+renciados (latitud/longitud) y una ficha de detalle que separa explícitamente dos bloques
+de información: (i) Descripción para caracterizar la propiedad y (ii) Clasificación para
+rankearla desde la óptica de inversión. Además, se propone un ranking condicional por
+barriocon criterios multiobjetivo (rentabilidad, brecha informativa, precio efectivo y proba-
+bilidad asociada al tiempo en mercado). Se incorporan resultados descriptivos del dataset
+para fundamentar decisiones de visualización, filtros y manejo de outliers (por ejemplo, el
+rango de precios y la alta concentración espacial de avisos).
+1
+Índice
+1. Objetivo del sitio y público objetivo 3
+2. Descripción del dataset y sus implicancias de diseño 3
+2.1. Cobertura y granularidad . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 3
+2.2. Variables clave y rangos . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 3
+2.3. Amenidades y filtros recomendados . . . . . . . . . . . . . . . . . . . . . . . . . . 4
+2.4. Resumen numérico para la interfaz . . . . . . . . . . . . . . . . . . . . . . . . . . 4
+3. Diccionario funcional: de las “columnas” al front-end 5
+3.1. Tabla de mapeo de campos . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 5
+4. Arquitectura de pantallas y componentes 6
+4.1. Estructura general . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 6
+4.2. Vista de mapa: georreferenciación y marcadores . . . . . . . . . . . . . . . . . . . 6
+4.2.1. Marcador con “par ordenado” . . . . . . . . . . . . . . . . . . . . . . . . . 6
+4.3. Selección de propiedad y ficha de detalle . . . . . . . . . . . . . . . . . . . . . . . 6
+5. Bloque 1: Descripción (caracterización de la propiedad) 7
+5.1. Identidad y localización . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 7
+5.2. Dimensiones y ambientes . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 7
+5.3. Precio y comparabilidad . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 7
+5.4. Amenidades y estado . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 7
+5.5. Contexto socioeconómico del entorno . . . . . . . . . . . . . . . . . . . . . . . . . 7
+6. Bloque 2: Clasificación (ranking y decisión) 8
+6.1. Probabilidades de venta a 2 meses: CKyCM. . . . . . . . . . . . . . . . . . . 8
+6.2. Valores presentes: V IyV O. . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 8
+6.3. Rentabilidad: ROI. . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 8
+6.4. Rango de precios sugerido . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 8
+6.5. Brecha informativa y precio efectivo . . . . . . . . . . . . . . . . . . . . . . . . . 9
+7. Ranking condicional al barrio 9
+7.1. Criterios de ordenamiento . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 9
+7.2. Ranking dentro del mapa visible . . . . . . . . . . . . . . . . . . . . . . . . . . . 9
+7.3. Tabla de ranking . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 9
+8. Recomendaciones de visualización y UX 10
+8.1. Manejo de densidad y performance . . . . . . . . . . . . . . . . . . . . . . . . . . 10
+8.2. Tratamiento de outliers . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 10
+8.3. Accesibilidad y legibilidad . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 10
+9. Ejemplos de lectura agregada por barrio/distrito (para la UI) 10
+10.Conclusión 10
+2
+1. Objetivo del sitio y público objetivo
+El objetivo del sitio es que un usuario (en particular, un inversor) pueda localizar ,comparar
+ypriorizar oportunidades inmobiliarias en Barcelona combinando información:
+espacial (coordenadas, barrio y código postal).
+descriptiva (tipo de unidad, amenities, tamaño, precio).
+sobre laclasificación (probabilidades de venta a 2 meses según distintos agentes, valores
+presentes y rentabilidad).
+Eldiseñoasumedosrolesimplícitos,segúnlascolumnasdelarchivo .xlsxadjunto( data_ROI.xlsx ):
+Propietario : aporta (o se asocia a) una probabilidad de venta a 2 meses ( CK).
+Inversor : dispone de una probabilidad estimada de venta a 2 meses ( CM) y calcula atractivo
+de compra a partir del valor presente para el inversor V I, propietario V Oy rentabilidad
+asociada ROI.
+La premisa central de interfaz es: primero explorar en el mapa , luegoprofundizar en
+una ficha y finalmente rankear dentro de un barrio o subconjunto visible para decidir
+acción: invertir en una propiedad o un conjunto de propiedades.
+2. Descripción del dataset y sus implicancias de diseño
+2.1. Cobertura y granularidad
+La base data_ROI.xlsx contiene 7.220 registros de propiedades en Barcelona. A nivel terri-
+torial cuenta con:
+11 distritos distintos y 64 barrios (campo neighborhood ).
+Cada registro incluye latitude ylongitude , además de postal_code .
+Estas magnitudes sugieren que el front-end debe estar preparado para mostrar miles de
+puntosy, por lo tanto, requerirá:
+Clustering de marcadores y/o simplificación por nivel de zoom.
+Búsqueda por barrioycódigo postal .
+Filtros eficientes que operen del lado del cliente (si la base está precargada) o mediante API
+paginada (si se consulta en vivo).
+2.2. Variables clave y rangos
+El rango de precios es amplio: mínimo 65.000y máximo 12.000.000 (mediana 642.581; media
+878.070). Esto implica:
+Lossliders lineales pueden ser poco informativos; se recomienda un slider logarítmico o
+doble control (mediana/percentiles) para navegación.
+Es útil ofrecer una vista alternativa por precio por metro cuadrado (price_m2 ), cuyo
+rango en la base va aproximadamente de 4.706 a 20.000 (mediana 6.910).
+En tamaño, sizepresenta valores desde 9hasta894m2(mediana 91; media 113,4). La
+presencia de outliers refuerza la necesidad de:
+Mostrarestadísticos robustos (mediana, percentiles) y no sólo promedios.
+3
+Incorporar un control de recorte (por ejemplo, “ocultar outliers”) o una escala no lineal en
+gráficos.
+En rentabilidad, ROItiene mediana ≈0,0418, media ≈0,166, percentil 10 ≈ −0,0489y
+percentil 90 ≈0,4908. Aproximadamente 65,2 %de los avisos tienen ROI > 0y coinciden con
+comprable =1. Esto habilita un diseño binario:
+Comprable (sí/no) como badgeo etiqueta destacada.
+Un código visual (por ejemplo, color o icono) que haga evidente si V I > V O .
+2.3. Amenidades y filtros recomendados
+Labaseincluyevariablesbinariasdeamenities: lift,garage,storage,terrace,air_conditioning ,
+swimming_pool ,garden,sportsynew_construction . En la muestra, las prevalencias aproxi-
+madas son:
+Ascensor: 82 %; aire acondicionado: 70 %; terraza: 47 %.
+Garaje: 14 %; pileta: 17 %; jardín: 5 %.
+Dado que varias amenidades son frecuentes, conviene ofrecer toggles rápidos (chips) para
+lift,air_conditioning ,terrace. Para amenidades raras ( garden,sports), conviene agrupar-
+las en un panel “Más filtros”.
+2.4. Resumen numérico para la interfaz
+Cuadro 1: Resumen descriptivo del dataset data_ROI.xlsx (BCN).
+Indicador Valor Comentario de diseño
+Cantidad de avisos 7.220 requiere clustering / paginación
+Barrios distintos 64 filtros por barrio + ranking local
+Distritos distintos 11 selector de distrito opcional
+Precio (mediana) 642.581 outliers altos; usar escala log
+Precio (mín–máx) 65.000–12.000.000 rango amplio
+Tamaño (mediana, m2) 91 slider con percentiles
+ROI (mediana) 0,041.8 separar signo (ganancia/pérdida)
+ROI (p10–p90) −0,048.9–0,490.8 resaltar cola alta
+Comprable (%) 65,2 etiqueta + filtro “sólo comprables”
+4
+3. Diccionario funcional: de las “columnas” al front-end
+El documento de especificación organiza la interfaz en torno a: (i) ubicación en mapa, (ii)
+descripción y (iii) clasificación, y luego un ranking condicional por barrio. En la práctica, las
+referencias por letras (por ejemplo, “S y T”) se traducen a los nombres de columnas del Excel.
+3.1. Tabla de mapeo de campos
+Cuadro 2: Mapeo sugerido entre categorías del diseño y co-
+lumnas del dataset.
+Categoría UI Campo en la interfaz Columna(s) típica(s) en data_ROI.xlsx
+Ubicación Coordenadas para mapa latitude ,longitude
+Ubicación Barrio / distrito neighborhood ,district
+Ubicación Código postal postal_code
+Descripción Tipo de unidad subtype (flat, apartment, attic, etc.)
+Descripción Descripción cualitativa
+(título)title
+Descripción Precio price; (derivados: lprice)
+Descripción Precio por m2price_m2 ; (derivado: lprice_m2 )
+Descripción Tamaño y ambientes size,bedrooms ,bathrooms
+Descripción Piso (cuando aplica) floor
+Descripción Amenidades lift,terrace,garage, etc.
+Descripción Condición / estado status,new_construction
+Descripción Ingreso del barrio ingreso (o equivalentes de ingreso medio)
+Clasificación Prob. venta 2 meses
+(propietario) CKprob_propietario_1 (ver nota)
+Clasificación Prob. venta 2 meses
+(inversor) CMprob_investor_1 (ver nota)
+Clasificación Valor presente inversor V I VI
+Clasificación Valor presente propietario
+V OVO
+Clasificación Condición de compra comprable (1 siV I > V O )
+Clasificación Rentabilidad ROI ROI
+Ranking por
+barrioBrecha informativa CM/CK
+Ranking por
+barrioPrecio efectivo price_m2 ×CM
+Nota sobre probabilidades: el Excel incluye vectores prob_investor_0...9 (interpreta-
+bles como probabilidades acumuladas por horizonte, siendo 0el primer periodo del horizonte).
+5
+Para representar “2 meses” existieran columnas directas ( CK,CM) que representan la probabilidad
+de venta en el primer periodo, 2meses.
+4. Arquitectura de pantallas y componentes
+4.1. Estructura general
+Se propone un esquema de layout “ mapa + panel lateral ”:
+Panel central: mapa interactivo con marcadores.
+Panel lateral izquierdo: filtros y selectores (barrio, rango de precios, rango de ROI, ameni-
+ties).
+Panel lateral derecho (o drawer): ficha de la propiedad seleccionada con tabla de dos
+columnas: Descripción y Clasificación.
+Para dispositivos móviles, el panel de detalle debería abrir como hoja deslizante (bottom
+sheet), manteniendo el mapa visible en segundo plano.
+4.2. Vista de mapa: georreferenciación y marcadores
+La ubicación se resuelve a partir de:
+Coordenadas latitude /longitude .
+Alternativamente, barrio ( neighborhood ) y código postal ( postal_code ) para filtros y bús-
+quedas.
+4.2.1. Marcador con “par ordenado”
+Cada “chinche” muestra un par ordenado (x, y)asociado a dos variables seleccionables (por
+ejemplo, (precio , ROI )o(ambientes , CM )). La interfaz debe permitir:
+Elegir el eje xdesde un menú desplegable (precio, precio/m2, tamaño, dormitorios, CK,CM,
+ROI, etc.).
+Elegir el eje ydesde un menú desplegable similar.
+Ver en el tooltip: nombre corto de la variable + valor formateado (con separador de miles y
+unidades).
+Recomendación práctica: definir “presets” de pares ordenados para que el usuario no
+tenga que configurar siempre:
+Preset 1: (price, ROI ).
+Preset 2: (price_m2 , ROI ).
+Preset 3: (bedrooms , CM ).
+Preset 4: (CM/CK, ROI )(brecha vs rentabilidad).
+4.3. Selección de propiedad y ficha de detalle
+Al seleccionar una propiedad en el mapa, se abre una ficha con una tabla de dos columnas :
+Descripción Clasificación
+Características observables Métricas de decisión / ranking
+6
+La cantidad de filas depende de los campos activos y de la completitud de datos (por ejemplo,
+algunas propiedades no informan statusofloor).
+5. Bloque 1: Descripción (caracterización de la propiedad)
+Este bloque debe responder: “¿Qué es esta propiedad?” y“¿Cómo es vivir o invertir
+aquí?”. Se recomienda organizarlo en sub-secciones visuales:
+5.1. Identidad y localización
+Título (headline): title.
+Barrio y distrito: neighborhood ,district .
+Código postal: postal_code .
+Tipo de unidad: subtype (por ejemplo, ático,duplex).
+5.2. Dimensiones y ambientes
+Tamaño: size(m2).
+Dormitorios y baños: bedrooms ,bathrooms .
+Piso: floor(cuando exista; tratar como texto).
+5.3. Precio y comparabilidad
+Precio: price(formato moneda).
+Precio por m2:price_m2 . Dado que su rango en la base está relativamente acotado (aprox.
+4.706 a 20.000), es un excelente candidato para comparaciones rápidas dentro de un barrio.
+5.4. Amenidades y estado
+Amenidades (chips): ascensor, terraza, garaje, trastero, aire acondicionado, pileta, jardín.
+Estado/condición: status(cuando exista) y new_construction .
+5.5. Contexto socioeconómico del entorno
+La variable ingreso (ingreso medio asociado al barrio) permite dar contexto. En la muestra,
+el ingreso medio por barrio se ubica aproximadamente entre 14.904y41.344(mediana alrededor
+de 27.912). En la interfaz, se sugiere:
+Mostrarlo como dato de contexto (no como criterio de compra por sí mismo).
+Ofrecer un filtro opcional por rango de ingreso del barrio para usuarios que lo consideren
+relevante.
+7
+6. Bloque 2: Clasificación (ranking y decisión)
+Este bloque debe responder: “¿Conviene comprar?” y“¿Qué tan prioritaria es esta
+propiedad frente a otras similares?” . Se recomienda presentarlo como tarjetas numéricas
+(KPIs) y, debajo, como explicación breve.
+6.1. Probabilidades de venta a 2 meses: CKyCM
+Se consideran dos probabilidades:
+CK: probabilidad de vender en 2 meses según el propietario.
+CM: probabilidad de vender en 2 meses según el inversor.
+Diseño recomendado:
+Mostrar ambas como barras horizontales 0–1, alineadas, para comparación directa.
+Agregar un texto interpretativo, por ejemplo: “El inversor estima una venta más rápida/lenta
+que el propietario”.
+6.2. Valores presentes: V IyV O
+La base incluye:
+V I: valor presente para el inversor ( VI).
+V O: valor presente para el propietario ( VO).
+Se propone mostrar:
+Dos valores en moneda y su diferencia V I−V O.
+Un indicador binario comprable (comprable =1 si V I > V O ).
+6.3. Rentabilidad: ROI
+La variable ROIresume rentabilidad. En el dataset:
+La mediana es cercana a 0,04 y el percentil 90 cerca de 0,49.
+Existe masa con ROI < 0(aprox. 34,8 %).
+Diseño recomendado:
+Mostrar ROIcomo porcentaje con signo.
+Asociar ROIa una etiqueta de interpretación: “alto”, “medio”, “bajo”, “negativo” usando
+cortes por percentiles dentro del barrio para evitar sesgos por composición.
+6.4. Rango de precios sugerido
+Se sugiere exponer el rango:
+[Precio listado ,Precio listado ×(1 +ROI)].
+Interpretación operativa: dado un ROIesperado, el extremo superior aproxima un “precio techo”
+coherente con esa rentabilidad. Si ROI < 0, el rango se contrae y funciona como señal de que, a
+ese precio, la operación no sería atractiva.
+8
+6.5. Brecha informativa y precio efectivo
+Para ranking multiobjetivo se definen:
+Brecha informativa =CM
+CK
+y
+Precio efectivo =price_m2 ×CM.
+Lectura económica:
+CM
+CK>1sugiere que el inversor es más optimista que el propietario respecto de vender rápido
+(o que valora distinto el tiempo en mercado).
+price_m2 ×CMcombina “precio unitario” con “liquidez” (venta rápida) en un único número
+para ordenar alternativas.
+7. Ranking condicional al barrio
+La funcionalidad de ranking debe permitir: filtrar por barrio y ordenar por criterios. Se
+recomienda que el usuario pueda elegir un “modo de ranking”:
+7.1. Criterios de ordenamiento
+Dentro del barrio seleccionado:
+1.ROI(ROI) descendente.
+2.Brecha informativa (CM/CK ) descendente.
+3.Precio efectivo (price_m2 ×CM) ascendente o descendente según interpretación (ver abajo).
+4.Tiempo en el mercado (proxy: CM, donde mayor CMimplica mayor probabilidad de
+venta rápida).
+Nota de implementación: el criterio 3 puede definirse de dos maneras según el objetivo
+del inversor:
+Buscar “valor”: priorizarprecio efectivo bajo (más barato por m2ajustado por liquidez).
+Buscar “salida rápida”: priorizarprecio efectivo alto si se interpreta como “precio que el
+mercado convalida cuando hay alta probabilidad de venta”.
+La interfaz puede ofrecer un selector: “Optimizar valor” vs “Optimizar salida”.
+7.2. Ranking dentro del mapa visible
+Además del barrio, se recomienda un ranking “ en la ventana del mapa ”: ordenar sólo las
+propiedades dentro del viewport actual. Esto es útil cuando el usuario navega fronteras barriales
+o busca zonas específicas.
+7.3. Tabla de ranking
+Propuesta de columnas para la tabla:
+Identificación: barrio, subtipo, tamaño.
+9
+Precio y precio/m2.
+ROI,comprable .
+CK,CM,CM/CK .
+V I,V O.
+Cada fila debe ser clickeable y sincronizar con el mapa (centrar y abrir la ficha).
+8. Recomendaciones de visualización y UX
+8.1. Manejo de densidad y performance
+Con 7.220 puntos, la UI debe incluir:
+Clustering por zoom y “spiderfy” en alta densidad.
+Carga diferida (lazy) de detalles: el mapa puede cargar sólo variables mínimas y pedir el resto
+al seleccionar.
+Cache del lado cliente para minimizar latencia al alternar rankings.
+8.2. Tratamiento de outliers
+Dado el máximo de precio (12.000.000), se sugiere:
+Mostrar en filtros los percentiles (p10, p50, p90).
+Permitir “recortar al p95” como opción rápida.
+En gráficos o leyendas, usar escalas robustas (por ejemplo, log en precio).
+8.3. Accesibilidad y legibilidad
+Formatear números con separador de miles, unidad y etiqueta clara (EUR, m2,%).
+Evitar depender sólo de color para distinguir comprable ; usar iconos/etiquetas.
+Tooltips breves en el mapa; detalle completo en el panel.
+9.Ejemplos de lectura agregada por barrio/distrito (para la UI)
+Aunque el sitio es de exploración micro (propiedad a propiedad), incluir un resumen agregado
+ayuda a contextualizar. Por ejemplo, a nivel de distrito, la base está concentrada en:
+Eixample (2.353 avisos; mediana de precio 655.000).
+Sarrià–Sant Gervasi (1.627 avisos; mediana de precio 835.000).
+Ciutat Vella (936 avisos; mediana de precio 595.000).
+A nivel de barrio, algunos de los más representados incluyen Dreta de l’Eixample (más de
+1.000avisos), L’Antiga Esquerra de l’Eixample (alrededor de 600) y Sant Gervasi–Galvany (más
+de 400). Esta concentración refuerza la importancia de filtros y clustering.
+10. Conclusión
+La propuesta de front-end se apoya en un principio simple: unir el mapa (dónde) con una
+lectura económica (qué conviene) . La separación entre Descripción yClasificación facilita
+10
+Cuadro 3: Barrios con más avisos: ejemplo de tabla útil como “resumen del barrio” en la UI.
+Barrio Avisos Precio med. ROI med. Ingreso med.
+Dreta de l’Eixample 1.013 1.099.000 0,365.8 29.815
+L’Antiga Esquerra de l’Eixample 600 650.000 0,066.5 27.912
+Sant Gervasi–Galvany 422 772.500 0,034.3 36.283
+Pedralbes 410 875.000 0,018.1 37.845
+Sarrià 373 1.150.000 0,061.3 32.620
+que el usuario no confunda atributos “observables” (tamaño, amenities, precio) con métricas
+de decisión (ROI, valores presentes y probabilidades). La incorporación de un par ordenado
+configurable en cada marcador convierte al mapa en una herramienta de análisis (no sólo de
+ubicación). Finalmente, el ranking condicional por barrio ofrece una salida accionable: dentro
+de un contexto geográfico comparable, ordenar por rentabilidad, brecha informativa y liquidez
+para priorizar oportunidades.
+11

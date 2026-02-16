@@ -1,0 +1,21 @@
+# Large Data Files
+*.dta
+*.pkl
+*.zip
+*.csv
+*.xlsx
+data/
+
+# Dependencies
+node_modules/
+.venv/
+env/
+
+# Build Output
+dist/
+build/
+
+# System
+.DS_Store
+.env
+.env.local
