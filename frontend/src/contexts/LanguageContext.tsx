@@ -52,6 +52,8 @@ const translations: Record<Language, Record<string, string>> = {
         'tutorial.next': 'Siguiente',
         'tutorial.start': 'Comenzar a Invertir',
         'tutorial.skip': 'Saltar Tutorial',
+        'error.timeout': 'Timeout: Server taking too long (Render cold start). Please retry.',
+        'error.general': 'Error loading properties',
     },
     en: {
         'app.title': 'House Flipping Pro',
@@ -94,6 +96,8 @@ const translations: Record<Language, Record<string, string>> = {
         'tutorial.next': 'Next',
         'tutorial.start': 'Start Investing',
         'tutorial.skip': 'Skip Tutorial',
+        'error.timeout': 'Timeout: Server taking too long (Render cold start). Please retry.',
+        'error.general': 'Error loading properties',
     }
 };
 

@@ -1,11 +1,14 @@
 import { useState, useEffect, useCallback } from 'react';
 import { client } from '../api/client';
 import type { FeatureCollection } from '../types';
+import { useLanguage } from '../contexts/LanguageContext';
+import axios from 'axios';
 
 export function useProperties(bbox?: string, filters?: any) {
     const [data, setData] = useState<FeatureCollection | null>(null);
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
+    const { t } = useLanguage();
 
     const fetchProperties = useCallback(async (currentBbox: string) => {
         let isMounted = true;
@@ -24,11 +27,9 @@ export function useProperties(bbox?: string, filters?: any) {
                 });
             }
 
-            // Timeout implementation in 15 seconds
+            // Timeout implementation in 30 seconds (increased from 15s)
             const controller = new AbortController();
-            // Use window.setTimeout explicitly to avoid NodeJS vs Browser type conflict if inferred wrong, 
-            // though usually fine. Safe pattern.
-            const timeoutId = setTimeout(() => controller.abort(), 15000);
+            const timeoutId = setTimeout(() => controller.abort(), 30000);
 
             const res = await client.get<FeatureCollection>(`/properties?${params.toString()}`, {
                 signal: controller.signal
@@ -43,16 +44,17 @@ export function useProperties(bbox?: string, filters?: any) {
         } catch (err: any) {
             console.error(err);
             if (isMounted) {
-                if (err.name === 'AbortError' || err.code === 'ECONNABORTED') {
-                    setError('Timeout: El servidor tarda demasiado en responder (Render cold start).');
+                // Check for cancellation (timeout)
+                if (axios.isCancel(err) || err.code === 'ECONNABORTED' || err.name === 'CanceledError') {
+                    setError(t('error.timeout'));
                 } else {
-                    setError('Error al cargar propiedades');
+                    setError(t('error.general'));
                 }
             }
         } finally {
             if (isMounted) setLoading(false);
         }
-    }, [filters]);
+    }, [filters, t]);
 
     // Debounced fetch
     useEffect(() => {
