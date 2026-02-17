@@ -2,9 +2,10 @@ import { useState } from 'react';
 import Map from '../components/Map';
 import PropertyDrawer from '../components/PropertyDrawer';
 import { useProperties } from '../hooks/useProperties';
-import type { Property } from '../types';
+import type { FeatureCollection, Property } from '../types';
 import { client } from '../api/client';
 import { useFilters } from '../contexts/FilterContext';
+import { useLanguage } from '../contexts/LanguageContext';
 
 export default function MapPage() {
     const [bbox, setBbox] = useState<string>('');
@@ -12,6 +13,7 @@ export default function MapPage() {
     const [isDrawerOpen, setIsDrawerOpen] = useState(false);
 
     const { filters } = useFilters();
+    const { t } = useLanguage();
     const { data: properties, loading, error } = useProperties(bbox, filters);
 
     const handleSelectProperty = async (id: number) => {
@@ -37,7 +39,7 @@ export default function MapPage() {
         <div className="relative w-full h-full">
             {loading && (
                 <div className="absolute top-4 left-1/2 transform -translate-x-1/2 bg-white px-4 py-2 rounded-full shadow-md z-[400] text-sm font-semibold text-blue-600">
-                    Cargando...
+                    {t('common.loading')}
                 </div>
             )}
 

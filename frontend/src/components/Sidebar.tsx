@@ -90,15 +90,15 @@ export default function Sidebar({ view, onViewChange, onOpenHelp }: SidebarProps
 
                     {/* City Selector */}
                     <div className="mb-4">
-                        <label className="block text-xs font-semibold text-gray-500 mb-1">Ciudad</label>
+                        <label className="block text-xs font-semibold text-gray-500 mb-1">{t('filter.city')}</label>
                         <select
                             className="w-full text-sm border border-gray-300 rounded px-2 py-1.5 appearance-none focus:outline-none focus:border-blue-500 bg-white"
                             value={city}
                             onChange={(e) => setCity(e.target.value as any)}
                         >
-                            <option value="Barcelona">Barcelona</option>
-                            <option value="Valencia">Valencia</option>
-                            <option value="Madrid">Madrid (Próximamente)</option>
+                            <option value="Barcelona">{t('city.barcelona')}</option>
+                            <option value="Valencia">{t('city.valencia')}</option>
+                            <option value="Madrid">{t('city.madrid_soon')}</option>
                         </select>
                     </div>
 

@@ -8,6 +8,8 @@ export function useProperties(bbox?: string, filters?: any) {
     const [error, setError] = useState<string | null>(null);
 
     const fetchProperties = useCallback(async (currentBbox: string) => {
+        let isMounted = true;
+
         try {
             setLoading(true);
             const params = new URLSearchParams();
@@ -22,14 +24,33 @@ export function useProperties(bbox?: string, filters?: any) {
                 });
             }
 
-            const res = await client.get<FeatureCollection>(`/properties?${params.toString()}`);
-            setData(res.data);
-            setError(null);
-        } catch (err) {
+            // Timeout implementation in 15 seconds
+            const controller = new AbortController();
+            // Use window.setTimeout explicitly to avoid NodeJS vs Browser type conflict if inferred wrong, 
+            // though usually fine. Safe pattern.
+            const timeoutId = setTimeout(() => controller.abort(), 15000);
+
+            const res = await client.get<FeatureCollection>(`/properties?${params.toString()}`, {
+                signal: controller.signal
+            });
+
+            clearTimeout(timeoutId);
+
+            if (isMounted) {
+                setData(res.data);
+                setError(null);
+            }
+        } catch (err: any) {
             console.error(err);
-            setError('Error al cargar propiedades');
+            if (isMounted) {
+                if (err.name === 'AbortError' || err.code === 'ECONNABORTED') {
+                    setError('Timeout: El servidor tarda demasiado en responder (Render cold start).');
+                } else {
+                    setError('Error al cargar propiedades');
+                }
+            }
         } finally {
-            setLoading(false);
+            if (isMounted) setLoading(false);
         }
     }, [filters]);
 
