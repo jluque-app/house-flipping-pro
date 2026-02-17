@@ -1,6 +1,18 @@
 {
     "rewrites": [
         {
+            "source": "/flipping/assets/(.*)",
+            "destination": "/assets/$1"
+        },
+        {
+            "source": "/flipping/vite.svg",
+            "destination": "/vite.svg"
+        },
+        {
+            "source": "/flipping/(.*)",
+            "destination": "/$1"
+        },
+        {
             "source": "/(.*)",
             "destination": "/index.html"
         }
