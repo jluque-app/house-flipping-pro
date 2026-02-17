@@ -7,7 +7,7 @@ import { LanguageProvider } from './contexts/LanguageContext'
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
-    <BrowserRouter>
+    <BrowserRouter basename="/flipping">
       <LanguageProvider>
         <App />
       </LanguageProvider>
