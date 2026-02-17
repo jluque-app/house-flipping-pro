@@ -2,7 +2,7 @@ import { useState } from 'react';
 import Map from '../components/Map';
 import PropertyDrawer from '../components/PropertyDrawer';
 import { useProperties } from '../hooks/useProperties';
-import type { FeatureCollection, Property } from '../types';
+import type { Property } from '../types';
 import { client } from '../api/client';
 import { useFilters } from '../contexts/FilterContext';
 import { useLanguage } from '../contexts/LanguageContext';
