@@ -38,7 +38,7 @@ export default function OnboardingModal({ isOpen, onClose }: OnboardingModalProp
     if (!isOpen) return null;
 
     return (
-        <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/20 backdrop-blur-sm p-4 font-sans">
+        <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/20 p-4 font-sans">
             <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md overflow-hidden animate-in zoom-in-95 duration-200">
                 <div className="p-6 text-center">
                     <div className="flex justify-center mb-6">
